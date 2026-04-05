@@ -6,11 +6,23 @@ import {
   getSortedRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import cx from "clsx";
+import { ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+
+const green = "#15B01A";
+const badKeywords = ["Failed", "Skipped", "Withdrawn"];
+
+const formatPlanets = (value) => {
+  try {
+    const arr = JSON.parse(value.replace(/'/g, '"'));
+    return arr.join(", ");
+  } catch {
+    return value;
+  }
+};
 
 export default function App() {
   const [data, setData] = useState([]);
-
   useEffect(() => {
     fetch("/jwst_tso_programs.csv")
       .then((res) => res.text())
@@ -24,17 +36,7 @@ export default function App() {
       });
   }, []);
 
-  const green = "#15B01A";
-  const badKeywords = ["Failed", "Skipped", "Withdrawn"];
-
-  const formatPlanets = (value) => {
-    try {
-      const arr = JSON.parse(value.replace(/'/g, '"'));
-      return arr.join(", ");
-    } catch {
-      return value;
-    }
-  };
+  const [sorting, setSorting] = React.useState([]);
 
   const columns = [
     { header: "Category", accessorKey: "category" },
@@ -58,7 +60,7 @@ export default function App() {
         const value = String(info.getValue());
         const isBad = badKeywords.some(k => value.includes(k));
         return (
-          <span style={{ color: isBad ? "red" : green }}>
+          <span className={cx(isBad ? "text-red" : "text-green")}>
             {value}
           </span>
         );
@@ -67,7 +69,6 @@ export default function App() {
     { header: "Cycle", accessorKey: "cycle" },
     { header: "Observation", accessorKey: "observation" },
     { header: "Visit", accessorKey: "visit" },
-    //{ header: "Target_in_program", accessorKey: "target_in_program" },
     { header: "Instrument", accessorKey: "instrument" },
     { header: "Mode", accessorKey: "mode",
       cell: (info) => (
@@ -91,170 +92,134 @@ export default function App() {
         </span>
       ),
     },
-    //{ header: "Date_end", accessorKey: "date_end" },
     { header: "Plan window", accessorKey: "plan_window" },
     { header: "Proprietary period", accessorKey: "proprietary_period" },
 
     { header: "RA", accessorKey: "ra" },
     { header: "Dec", accessorKey: "dec" },
-
-    //{ header: "Label", accessorKey: "label" },
-    //{ header: "Special_reqs", accessorKey: "special_reqs" },
-    //{ header: "Phase_reqs", accessorKey: "phase_reqs" },
-    //{ header: "Period", accessorKey: "period" },
-    //{ header: "Phase_start", accessorKey: "phase_start" },
-    //{ header: "Phase_duration", accessorKey: "phase_duration" },
-
   ];
 
-  //  {
-  //    header: "#",
-  //    cell: (info) => info.row.index + 1,
-  //  },
-  //  {
-  //    header: "Name",
-  //    accessorKey: "name",
-  //    cell: (info) => (
-  //      <div>
-  //        <strong>{info.row.original.symbol}</strong>{" "}
-  //        <span style={{ color: "#888" }}>{info.getValue()}</span>
-  //      </div>
-  //    ),
-  //  },
-  //  {
-  //    header: "Price",
-  //    accessorKey: "price",
-  //    cell: (info) => `$${info.getValue().toLocaleString()}`,
-  //  },
-  //  {
-  //    header: "24h %",
-  //    accessorKey: "change",
-  //    cell: (info) => {
-  //      const value = info.getValue();
-  //      return (
-  //        <span style={{ color: value >= 0 ? "green" : "red" }}>
-  //          {value > 0 ? "+" : ""}
-  //          {value}%
-  //        </span>
-  //      );
-  //    },
-  //  },
-  const [sorting, setSorting] = React.useState([]);
 
   const table = useReactTable({
     data,
     columns,
     state: { sorting },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
   });
 
   const parentRef = useRef();
   const rows = table.getRowModel().rows;
-  const rowVirtualizer = useVirtualizer({
-      count: rows.length,
-      getScrollElement: () => parentRef.current,
-      estimateSize: () => 48,
-      overscan: 5,
-  });
+
+  //      style={{
+  //        width: "100%",
+  //        borderCollapse: "collapse",
+  //        background: "#111",
+  //        color: "white",
+  //        borderRadius: "5px",
+  //        overflow: "hidden",
+  //      }}
+  //    >
+
 
   return (
-
-    <div
-        ref={parentRef}
-        style={{
-            padding: "40px",
-            //fontFamily: "Arial",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif",
-            //overflow: "auto",
-        }}
-    >
+    <div className="overflow-x-auto bg-white shadow-md rounded-lg">
       <h2>JWST TSO observations</h2>
 
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          background: "#111",
-          color: "white",
-          borderRadius: "5px",
-          overflow: "hidden",
-        }}
-      >
-
-        <thead style={{
-            background: "#21262d",
-            //position: "sticky",
-            top: 0,
-         }}>
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} >
               {headerGroup.headers.map((header) => (
                 <th
                     key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
-                    style={{
-                        cursor: "pointer",
-                        padding: "8px 5px",  // top-bottom left-right
-                        borderBottom: "2px solid #444444",
-                        whiteSpace: "nowrap",
-                    }}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    style={{whiteSpace: "nowrap"}}
                 >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                   {{
-                     asc: " 🔼",
-                     desc: " 🔽",
-                   }[header.column.getIsSorted()] ?? ""}
-
+                  <div
+                    {...{
+                      className: header.column.getCanSort()
+                        ? "cursor-pointer select-none flex items-center whitespace-nowrap"
+                        : "",
+                      onClick: header.column.getToggleSortingHandler(),
+                    }}
+                  >
+                    <span>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                    </span>
+                    <span className="ml-2 flex-shrink-0">
+                    &nbsp;
+                    {{
+                      asc: <ChevronUp color="black" strokeWidth={3} className="ml-2" size={18} />,
+                      desc: <ChevronDown color="black" strokeWidth={3} className="ml-2" size={18} />,
+                    }[header.column.getIsSorted()] ?? (
+                      <ChevronsUpDown color="#BABABA" className="ml-2" size={18} />
+                    )}
+                    </span>
+                  </div>
                 </th>
               ))}
             </tr>
           ))}
         </thead>
 
-        <tbody
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              position: "relative",
-            }}
-        >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const row = rows[virtualRow.index];
-
-              return (
-                <tr
-                  key={row.id}
-                  style={{
-                    borderBottom: "1px solid #222",
-                    padding: "0px 5px",  // top-bottom left-right
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                        key={cell.id}
-                        style={{
-                            padding: "5px",
-                            borderRight: "1px solid #222",
-                        }}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              );
-          })}
-
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                style={{
+                  borderBottom: "1px solid #222",
+                  padding: "0px 5px",  // top-bottom left-right
+                  //position: "absolute",
+                  //top: 0,
+                  //transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                      key={cell.id}
+                      style={{
+                          padding: "5px",
+                          borderRight: "1px solid #222",
+                      }}
+                  >
+                    {flexRender(
+                      cell.column.columnDef.cell,
+                      cell.getContext()
+                    )}
+                  </td>
+                ))}
+              </tr>
+          ))}
         </tbody>
 
       </table>
     </div>
   );
 }
+        //<tbody className="bg-white text-xs">
+        //  {table.getRowModel().rows.map((row, idx) => (
+        //    <tr key={row.id} className="group">
+        //      {row.getVisibleCells().map((cell, idx) => {
+        //        const { columnDef } = cell.column;
+        //        return (
+        //          <td
+        //            key={cell.id}
+        //            className={cx(
+        //              "px-4 py-1 whitespace-nowrap border border-gray-500 bg-white",
+        //              idx === 0 && "sticky left-0 z-10 bg-red-100"
+        //            )}
+        //          >
+        //            {flexRender(columnDef.cell, cell.getContext())}
+        //          </td>
+        //        );
+        //      })}
+        //    </tr>
+        //  ))}
+        //</tbody>
+
 
