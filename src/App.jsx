@@ -48,13 +48,7 @@ export default function App() {
     { header: "Planet(s)", accessorKey: "planets",
         cell: (info) => formatPlanets(info.getValue()),
     },
-    { header: "Event", accessorKey: "event",
-      cell: (info) => (
-        <span style={{ whiteSpace: "nowrap" }}>
-          {info.getValue()}
-        </span>
-      ),
-    },
+    { header: "Event", accessorKey: "event" },
     { header: "Status", accessorKey: "status",
       cell: (info) => {
         const value = String(info.getValue());
@@ -70,13 +64,7 @@ export default function App() {
     { header: "Observation", accessorKey: "observation" },
     { header: "Visit", accessorKey: "visit" },
     { header: "Instrument", accessorKey: "instrument" },
-    { header: "Mode", accessorKey: "mode",
-      cell: (info) => (
-        <span style={{ whiteSpace: "nowrap" }}>
-          {info.getValue()}
-        </span>
-      ),
-    },
+    { header: "Mode", accessorKey: "mode" },
     { header: "Disperser", accessorKey: "disperser" },
     { header: "Filter", accessorKey: "filter" },
     { header: "Subarray", accessorKey: "subarray" },
@@ -85,16 +73,9 @@ export default function App() {
     { header: "Integrations", accessorKey: "integrations" },
     { header: "Duration", accessorKey: "duration" },
 
-    { header: "Date start", accessorKey: "date_start",
-      cell: (info) => (
-        <span style={{ whiteSpace: "nowrap" }}>
-          {info.getValue()}
-        </span>
-      ),
-    },
+    { header: "Date start", accessorKey: "date_start" },
     { header: "Plan window", accessorKey: "plan_window" },
     { header: "Proprietary period", accessorKey: "proprietary_period" },
-
     { header: "RA", accessorKey: "ra" },
     { header: "Dec", accessorKey: "dec" },
   ];
@@ -112,30 +93,19 @@ export default function App() {
   const parentRef = useRef();
   const rows = table.getRowModel().rows;
 
-  //      style={{
-  //        width: "100%",
-  //        borderCollapse: "collapse",
-  //        background: "#111",
-  //        color: "white",
-  //        borderRadius: "5px",
-  //        overflow: "hidden",
-  //      }}
-  //    >
-
 
   return (
     <div className="overflow-x-auto bg-white shadow-md rounded-lg">
       <h2>JWST TSO observations</h2>
 
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-gray-400">
+        <thead className="bg-gray-200">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} >
               {headerGroup.headers.map((header) => (
                 <th
                     key={header.id}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    style={{whiteSpace: "nowrap"}}
+                    className="px-2 py-2 text-center text-xs font-medium text-black uppercase"
                 >
                   <div
                     {...{
@@ -151,15 +121,12 @@ export default function App() {
                       header.getContext()
                     )}
                     </span>
-                    <span className="ml-2 flex-shrink-0">
-                    &nbsp;
                     {{
-                      asc: <ChevronUp color="black" strokeWidth={3} className="ml-2" size={18} />,
-                      desc: <ChevronDown color="black" strokeWidth={3} className="ml-2" size={18} />,
+                      asc: <ChevronUp color="black" strokeWidth={3} size={18} />,
+                      desc: <ChevronDown color="black" strokeWidth={3} size={18} />,
                     }[header.column.getIsSorted()] ?? (
-                      <ChevronsUpDown color="#BABABA" className="ml-2" size={18} />
+                      <ChevronsUpDown color="#AAA" size={18} />
                     )}
-                    </span>
                   </div>
                 </th>
               ))}
@@ -167,26 +134,12 @@ export default function App() {
           ))}
         </thead>
 
-        <tbody>
+        <tbody className="bg-white divide-y divide-gray-200">
           {table.getRowModel().rows.map((row) => (
               <tr
-                key={row.id}
-                style={{
-                  borderBottom: "1px solid #222",
-                  padding: "0px 5px",  // top-bottom left-right
-                  //position: "absolute",
-                  //top: 0,
-                  //transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
+                key={row.id} className="hover:bg-gray-50" >
                 {row.getVisibleCells().map((cell) => (
-                  <td
-                      key={cell.id}
-                      style={{
-                          padding: "5px",
-                          borderRight: "1px solid #222",
-                      }}
-                  >
+                  <td key={cell.id} className="px-2 py-2 text-left whitespace-nowrap text-sm text-gray-500" >
                     {flexRender(
                       cell.column.columnDef.cell,
                       cell.getContext()
