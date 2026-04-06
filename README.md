@@ -32,4 +32,7 @@ npm install clsx
 # icons: https://lucide.dev/guide/react/getting-started
 npm install lucide-react
 
+# Tailwindcss
+npm install tailwindcss @tailwindcss/vite
+
 npm run dev
