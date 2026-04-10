@@ -221,11 +221,16 @@ export default function App() {
           </thead>
 
           <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
+            {table.getRowModel().rows.map((row) => {
+              const value = String(row.original.status?? "");
+              const isBad = badKeywords.some(k => value.includes(k));
+              return (
                 <tr
-                  key={row.id} className="hover:bg-gray-50" >
+                  key={row.id}
+                  className={cx("hover:bg-gray-50", isBad ? "text-red" : "text-gray-500")}
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-2 text-left whitespace-nowrap text-sm text-gray-500" >
+                    <td key={cell.id} className="px-2 py-2 text-left whitespace-nowrap text-sm" >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -233,7 +238,8 @@ export default function App() {
                     </td>
                   ))}
                 </tr>
-            ))}
+              )}
+            )}
           </tbody>
         </table>
 
