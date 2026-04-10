@@ -15,7 +15,7 @@ import {
   ChevronsLeft,
   ChevronLeft,
   ChevronsRight,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 
 const green = "#15B01A";
@@ -97,7 +97,7 @@ export default function App() {
     state: { sorting },
     initialState: {
       pagination: {
-        pageSize: 15,
+        pageSize: 50,
       },
     },
     getCoreRowModel: getCoreRowModel(),
@@ -108,8 +108,7 @@ export default function App() {
 
 
   return (
-
-    <div className="overflow-x-auto bg-white shadow-md rounded-lg">
+    <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
 
         <h2>JWST Exoplanet Observations</h2>
 
@@ -179,13 +178,12 @@ export default function App() {
             >
               <ChevronsRight size={20} />
             </button>
-
           </div>
         </div>
 
         {/* The table */}
         <table className="min-w-full divide-y divide-gray-400">
-          <thead className="bg-gray-200">
+          <thead className="sticky top-0 bg-gray-200">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} >
                 {headerGroup.headers.map((header) => (
@@ -193,27 +191,29 @@ export default function App() {
                       key={header.id}
                       className="px-2 py-2 text-center text-xs font-medium text-black uppercase"
                   >
-                    <div
-                      {...{
-                        className: header.column.getCanSort()
-                          ? "cursor-pointer select-none flex items-center whitespace-nowrap"
-                          : "",
-                        onClick: header.column.getToggleSortingHandler(),
-                      }}
-                    >
-                      <span>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
+                      {header.isPlaceholder ? null : (
+                        <div
+                          {...{
+                            className: header.column.getCanSort()
+                              ? "cursor-pointer select-none flex items-center whitespace-nowrap"
+                              : "",
+                            onClick: header.column.getToggleSortingHandler(),
+                          }}
+                        >
+                          <span>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                          </span>
+                          {{
+                            asc: <ChevronUp color="black" strokeWidth={3} size={18} />,
+                            desc: <ChevronDown color="black" strokeWidth={3} size={18} />,
+                          }[header.column.getIsSorted()] ?? (
+                            <ChevronsUpDown color="#AAA" size={18} />
+                          )}
+                        </div>
                       )}
-                      </span>
-                      {{
-                        asc: <ChevronUp color="black" strokeWidth={3} size={18} />,
-                        desc: <ChevronDown color="black" strokeWidth={3} size={18} />,
-                      }[header.column.getIsSorted()] ?? (
-                        <ChevronsUpDown color="#AAA" size={18} />
-                      )}
-                    </div>
                   </th>
                 ))}
               </tr>
@@ -237,7 +237,7 @@ export default function App() {
           </tbody>
         </table>
 
-      </div>
+    </div>
   );
 }
 
