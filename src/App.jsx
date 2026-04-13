@@ -1,10 +1,17 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, {
+ useEffect,
+ useState,
+ useRef,
+} from "react";
 import Papa from "papaparse";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getPaginationRowModel,
+  getFilteredRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   flexRender,
 } from "@tanstack/react-table";
 import cx from "clsx";
@@ -30,6 +37,49 @@ const formatPlanets = (value) => {
   }
 };
 
+
+function Filter({ column, table }) {
+  const value = column.getFilterValue() ?? "";
+  const { filterVariant } = column.columnDef.meta ?? {}
+
+  const options = Array.from(
+    column.getFacetedUniqueValues().keys()
+  ).sort();
+
+  return filterVariant === 'select' ? (
+    <select
+      onChange={(e) => column.setFilterValue(e.target.value)}
+      value={value}
+      className="mt-1 w-full border rounded-xs px-1 py-0.5 text-xs bg-gray-100 border-gray-300"
+    >
+      <option value="">all</option>
+      <option value="transit">transit</option>
+      <option value="eclipse">eclipse</option>
+      <option value="phase">phase curve</option>
+    </select>
+  ) : filterVariant === 'select_faceted' ? (
+    <select
+      onChange={(e) => column.setFilterValue(e.target.value)}
+      value={value}
+      className="mt-1 w-full border rounded-xs px-1 py-0.5 text-xs bg-gray-100 border-gray-300"
+    >
+      <option value="">all</option>
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  ) : (
+    <input
+      value={value}
+      onChange={(e) => column.setFilterValue(e.target.value)}
+      placeholder="Search"
+      className="mt-1 w-full border rounded-xs px-1 py-0.5 text-xs bg-gray-100 border-gray-300"
+    />
+  )
+}
+
 export default function App() {
 
   const [data, setData] = useState([]);
@@ -48,16 +98,21 @@ export default function App() {
   }, []);
 
   const columns = [
-    { header: "Category", accessorKey: "category" },
+    { header: "Category", accessorKey: "category",
+      meta: { filterVariant: 'select_faceted' },
+    },
     { header: "PID", accessorKey: "pid",
       meta: { sticky: true},
     },
     { header: "PI", accessorKey: "pi" },
     { header: "Target", accessorKey: "target" },
     { header: "Planet(s)", accessorKey: "planets",
-        cell: (info) => formatPlanets(info.getValue()),
+      cell: (info) => formatPlanets(info.getValue()),
+      meta: { filterVariant: 'select_faceted' },
     },
-    { header: "Event", accessorKey: "event" },
+    { header: "Event", accessorKey: "event",
+      meta: { filterVariant: 'select' },
+    },
     { header: "Status", accessorKey: "status",
       cell: (info) => {
         const value = String(info.getValue());
@@ -68,28 +123,58 @@ export default function App() {
           </span>
         );
       },
+      meta: { filterVariant: 'select_faceted' },
     },
-    { header: "Cycle", accessorKey: "cycle" },
+    { header: "Cycle", accessorKey: "cycle",
+      meta: { filterVariant: 'select_faceted' },
+      filterFn: (row, columnId, filterValue) => {
+        return String(row.getValue(columnId)) === String(filterValue);
+      },
+    },
     { header: "Observation", accessorKey: "observation" },
     { header: "Visit", accessorKey: "visit" },
-    { header: "Instrument", accessorKey: "instrument" },
-    { header: "Mode", accessorKey: "mode" },
-    { header: "Disperser", accessorKey: "disperser" },
-    { header: "Filter", accessorKey: "filter" },
-    { header: "Subarray", accessorKey: "subarray" },
-    { header: "Readout", accessorKey: "readout" },
-    { header: "Groups", accessorKey: "groups" },
-    { header: "Integrations", accessorKey: "integrations" },
+
+    { header: "Instrument", accessorKey: "instrument",
+      meta: { filterVariant: 'select_faceted' },
+    },
+    { header: "Mode", accessorKey: "mode",
+      meta: { filterVariant: 'select_faceted' },
+    },
+    { header: "Disperser", accessorKey: "disperser",
+      meta: { filterVariant: 'select_faceted' },
+    },
+    { header: "Filter", accessorKey: "filter",
+      meta: { filterVariant: 'select_faceted' },
+    },
+    { header: "Subarray", accessorKey: "subarray",
+      meta: { filterVariant: 'select_faceted' },
+    },
+    { header: "Readout", accessorKey: "readout",
+      meta: { filterVariant: 'select_faceted' },
+    },
+    { header: "Groups", accessorKey: "groups",
+      filterFn: (row, columnId, filterValue) => {
+        return String(row.getValue(columnId)) === String(filterValue);
+      },
+    },
+    { header: "Integrations", accessorKey: "integrations",
+      filterFn: (row, columnId, filterValue) => {
+        return String(row.getValue(columnId)) === String(filterValue);
+      },
+    },
     { header: "Duration", accessorKey: "duration" },
 
     { header: "Date start", accessorKey: "date_start" },
     { header: "Plan window", accessorKey: "plan_window" },
-    { header: "Proprietary period", accessorKey: "proprietary_period" },
+    { header: "Proprietary period", accessorKey: "proprietary_period",
+      meta: { filterVariant: 'select_faceted' },
+    },
     { header: "RA", accessorKey: "ra" },
     { header: "Dec", accessorKey: "dec" },
   ];
 
   const [sorting, setSorting] = React.useState([]);
+  const [columnFilters, setColumnFilters] = React.useState([]);
 
   const table = useReactTable({
     data,
@@ -104,6 +189,9 @@ export default function App() {
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
 
@@ -189,9 +277,10 @@ export default function App() {
                 {headerGroup.headers.map((header) => (
                   <th
                       key={header.id}
-                      className="px-2 py-2 text-center text-xs font-medium text-black uppercase"
+                      className="px-2 py-1.5 text-center text-xs font-medium text-black uppercase"
                   >
                       {header.isPlaceholder ? null : (
+                      <>
                         <div
                           {...{
                             className: header.column.getCanSort()
@@ -213,6 +302,12 @@ export default function App() {
                             <ChevronsUpDown color="#AAA" size={18} />
                           )}
                         </div>
+                        {header.column.getCanFilter() ? (
+                          <div>
+                            <Filter column={header.column} table={table} />
+                          </div>
+                        ) : null}
+                      </>
                       )}
                   </th>
                 ))}
