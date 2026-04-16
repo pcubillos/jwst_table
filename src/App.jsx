@@ -40,12 +40,38 @@ const formatPlanets = (value) => {
 
 function Filter({ column, table }) {
   const value = column.getFilterValue() ?? "";
+  const inst_filter = table.getColumn("instrument").getFilterValue() ?? "";
+  const instruments = inst_filter ? [inst_filter]
+    : Array.from(
+        table.getColumn("instrument").getFacetedUniqueValues().keys()
+      )
+
+  const values = Array.from(column.getFacetedUniqueValues().keys())
+  const isNumeric = values.every(v => !isNaN(Number(v)))
+  const options = isNumeric
+    ? values.sort((a, b) => Number(a) - Number(b))
+    : values.sort()
+
+  const grouped = column.getFacetedRowModel().rows.reduce((acc, row) => {
+      const instrument = row.getValue("instrument")
+      const value = row.getValue(column.id)
+
+      if (!instruments.includes(instrument)) {
+        return acc
+      }
+      if (!acc[instrument]) {
+        acc[instrument] = new Set()
+      }
+      acc[instrument].add(value)
+
+      return acc
+    }, {})
+
+  const groups = Object.fromEntries(
+    Object.entries(grouped).map(([key, set]) => [key, [...set].sort()])
+  )
+
   const { filterVariant } = column.columnDef.meta ?? {}
-
-  const options = Array.from(
-    column.getFacetedUniqueValues().keys()
-  ).sort();
-
   return filterVariant === 'select' ? (
     <select
       onChange={(e) => column.setFilterValue(e.target.value)}
@@ -70,6 +96,23 @@ function Filter({ column, table }) {
         </option>
       ))}
     </select>
+  ) : filterVariant === 'select_grouped' ? (
+    <select
+      onChange={(e) => column.setFilterValue(e.target.value)}
+      value={value}
+      className="mt-1 w-full border rounded-xs px-1 py-0.5 text-xs bg-gray-100 border-gray-300"
+    >
+      <option value="">all</option>
+      {Object.entries(groups).map(([label, set]) => (
+        <optgroup key={label} label={label}>
+          {[...set].sort().map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
   ) : (
     <input
       value={value}
@@ -79,6 +122,7 @@ function Filter({ column, table }) {
     />
   )
 }
+
 
 export default function App() {
 
@@ -103,6 +147,7 @@ export default function App() {
     },
     { header: "PID", accessorKey: "pid",
       meta: { sticky: true},
+      filterFn: 'includesString',
     },
     { header: "PI", accessorKey: "pi" },
     { header: "Target", accessorKey: "target" },
@@ -127,40 +172,37 @@ export default function App() {
     },
     { header: "Cycle", accessorKey: "cycle",
       meta: { filterVariant: 'select_faceted' },
-      filterFn: (row, columnId, filterValue) => {
-        return String(row.getValue(columnId)) === String(filterValue);
-      },
+      filterFn: 'includesString',
     },
-    { header: "Observation", accessorKey: "observation" },
-    { header: "Visit", accessorKey: "visit" },
-
+    { header: "Observation", accessorKey: "observation",
+      filterFn: 'includesString',
+    },
+    { header: "Visit", accessorKey: "visit",
+      filterFn: 'includesString',
+    },
     { header: "Instrument", accessorKey: "instrument",
       meta: { filterVariant: 'select_faceted' },
     },
     { header: "Mode", accessorKey: "mode",
-      meta: { filterVariant: 'select_faceted' },
+      meta: { filterVariant: 'select_grouped' },
     },
     { header: "Disperser", accessorKey: "disperser",
-      meta: { filterVariant: 'select_faceted' },
+      meta: { filterVariant: 'select_grouped' },
     },
     { header: "Filter", accessorKey: "filter",
-      meta: { filterVariant: 'select_faceted' },
+      meta: { filterVariant: 'select_grouped' },
     },
     { header: "Subarray", accessorKey: "subarray",
-      meta: { filterVariant: 'select_faceted' },
+      meta: { filterVariant: 'select_grouped' },
     },
     { header: "Readout", accessorKey: "readout",
-      meta: { filterVariant: 'select_faceted' },
+      meta: { filterVariant: 'select_grouped' },
     },
     { header: "Groups", accessorKey: "groups",
-      filterFn: (row, columnId, filterValue) => {
-        return String(row.getValue(columnId)) === String(filterValue);
-      },
+      filterFn: 'includesString',
     },
     { header: "Integrations", accessorKey: "integrations",
-      filterFn: (row, columnId, filterValue) => {
-        return String(row.getValue(columnId)) === String(filterValue);
-      },
+      filterFn: 'includesString',
     },
     { header: "Duration", accessorKey: "duration" },
 
@@ -168,6 +210,7 @@ export default function App() {
     { header: "Plan window", accessorKey: "plan_window" },
     { header: "Proprietary period", accessorKey: "proprietary_period",
       meta: { filterVariant: 'select_faceted' },
+      filterFn: 'includesString',
     },
     { header: "RA", accessorKey: "ra" },
     { header: "Dec", accessorKey: "dec" },
