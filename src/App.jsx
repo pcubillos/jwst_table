@@ -242,6 +242,8 @@ export default function App() {
   const first_entry = pageSize * pageIndex + 1
   const last_entry = Math.min((pageIndex+1) * pageSize, table.getRowCount())
 
+  const hasFilters = table.getState().columnFilters.length > 0
+
   return (
     <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
 
@@ -249,6 +251,14 @@ export default function App() {
 
         {/* Pagination div */}
         <div className="sticky left-2 flex flex-col sm:flex-row justify-between items-center ml-2 mb-2 text-sm text-gray-700">
+          <button
+            onClick={() => table.resetColumnFilters()}
+            disabled={!hasFilters}
+            className="px-2 py-1 rounded cursor-pointer bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            Reset all filters
+          </button>
+
           <div className="flex items-center mb-4 sm:mb-0">
             <span className="mr-2">Entries per page</span>
             <select
