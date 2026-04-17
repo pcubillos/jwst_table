@@ -225,6 +225,7 @@ export default function App() {
     state: { sorting },
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 50,
       },
     },
@@ -237,6 +238,9 @@ export default function App() {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
+  const { pageIndex, pageSize } = table.getState().pagination
+  const first_entry = pageSize * pageIndex + 1
+  const last_entry = Math.min((pageIndex+1) * pageSize, table.getRowCount())
 
   return (
     <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
@@ -244,9 +248,9 @@ export default function App() {
         <h2>JWST Exoplanet Observations</h2>
 
         {/* Pagination div */}
-        <div className="flex flex-col sm:flex-row justify-between items-center ml-2 mb-2 text-sm text-gray-700">
+        <div className="sticky left-2 flex flex-col sm:flex-row justify-between items-center ml-2 mb-2 text-sm text-gray-700">
           <div className="flex items-center mb-4 sm:mb-0">
-            <span className="mr-2">Items per page</span>
+            <span className="mr-2">Entries per page</span>
             <select
               className="border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 px-2 py-2"
               value={table.getState().pagination.pageSize}
@@ -260,6 +264,7 @@ export default function App() {
                 </option>
               ))}
             </select>
+            <span className="mr-2 ml-2"> ({first_entry} to {last_entry} of {table.getRowCount()})</span>
           </div>
 
           <div className="flex items-center space-x-2">
