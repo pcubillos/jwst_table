@@ -151,6 +151,15 @@ export default function App() {
       meta: { filterVariant: 'select_faceted' },
     },
     { header: "PID", accessorKey: "pid",
+      cell: (info) => (
+          <a href={`https://www.stsci.edu/jwst/science-execution/program-information?id=${info.getValue()}`}
+            className="text-blue-500 hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {info.getValue()}
+          </a>
+      ),
       meta: { sticky: true},
       filterFn: 'includesString',
     },
