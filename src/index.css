@@ -112,6 +112,21 @@ code {
   background: var(--code-bg);
 }
 
+.badge {
+  border-radius: 0.25rem;
+  padding: 2px 5px;
+}
+
+.badge-green {
+  color: #15B01A;
+  background: #E6F6E7;
+}
+
+.badge-red {
+  color: red;
+  background: #FEE4E4;
+}
+
 
 .text-red {
   color: red;
@@ -119,6 +134,10 @@ code {
 
 .text-green {
   color: #15B01A;
+}
+
+.text-blue {
+  color: #4068E0;
 }
 
 .container {

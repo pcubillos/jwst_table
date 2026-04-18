@@ -25,7 +25,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-const green = "#15B01A";
 const badKeywords = ["Failed", "Skipped", "Withdrawn"];
 
 const formatPlanets = (value) => {
@@ -63,7 +62,6 @@ function Filter({ column, table }) {
         acc[instrument] = new Set()
       }
       acc[instrument].add(value)
-
       return acc
     }, {})
 
@@ -163,7 +161,7 @@ export default function App() {
         const value = String(info.getValue());
         const isBad = badKeywords.some(k => value.includes(k));
         return (
-          <span className={cx(isBad ? "text-red" : "text-green")}>
+          <span className={cx("badge", isBad ? "badge-red" : "badge-green")}>
             {value}
           </span>
         );
