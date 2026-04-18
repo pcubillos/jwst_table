@@ -61,7 +61,14 @@ function Filter({ column, table }) {
       if (!acc[instrument]) {
         acc[instrument] = new Set()
       }
-      acc[instrument].add(value)
+      if (typeof value === "string" && value.includes(",")) {
+        value.split(",").forEach(v => {
+          const trimmed = v.trim()
+          if (trimmed) acc[instrument].add(trimmed)
+        })
+      } else {
+        acc[instrument].add(value)
+      }
       return acc
     }, {})
 
