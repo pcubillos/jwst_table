@@ -24,6 +24,7 @@ import {
   ChevronsRight,
   ChevronRight,
 } from 'lucide-react';
+import { parse, addMonths, isBefore } from "date-fns"
 
 const badKeywords = ["Failed", "Skipped", "Withdrawn"];
 
@@ -35,7 +36,6 @@ const formatPlanets = (value) => {
     return value;
   }
 };
-
 
 function Filter({ column, table }) {
   const value = column.getFilterValue() ?? "";
@@ -129,6 +129,34 @@ function Filter({ column, table }) {
 }
 
 
+function getRowStyles(rowColor) {
+  if (rowColor === 'planned') {
+    return {
+        base: "text-planned",
+        hover: "group-hover:bg-planned-bkg",
+    };
+  }
+  if (rowColor === 'failed') {
+    return {
+        base: "text-fail",
+        hover: "group-hover:text-fail group-hover:bg-fail-bkg",
+    };
+  }
+  if (rowColor === 'public') {
+    return {
+        base: "text-planned",
+        hover: "group-hover:text-public group-hover:bg-public-bkg",
+    };
+  }
+  if (rowColor === 'proprietary') {
+    return {
+        base: "text-planned",
+        hover: "group-hover:text-proprietary group-hover:bg-proprietary-bkg",
+    };
+  }
+}
+
+
 export default function App() {
 
   const [data, setData] = useState([]);
@@ -151,16 +179,21 @@ export default function App() {
       meta: { filterVariant: 'select_faceted' },
     },
     { header: "PID", accessorKey: "pid",
-      cell: (info) => (
-          <a href={`https://www.stsci.edu/jwst/science-execution/program-information?id=${info.getValue()}`}
-            className="text-blue-500 hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {info.getValue()}
-          </a>
-      ),
-      meta: { sticky: true},
+      cell: (info) => {
+        const state = releaseStatus(info.row)
+        return (
+            <a href={`https://www.stsci.edu/jwst/science-execution/program-information?id=${info.getValue()}`}
+              className={cx(
+                "hover:underline badge",
+                `badge-${state}`,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {info.getValue()}
+            </a>
+        )},
+      meta: { sticky: true },
       filterFn: 'includesString',
     },
     { header: "PI", accessorKey: "pi" },
@@ -175,9 +208,9 @@ export default function App() {
     { header: "Status", accessorKey: "status",
       cell: (info) => {
         const value = String(info.getValue());
-        const isBad = badKeywords.some(k => value.includes(k));
+        const state = releaseStatus(info.row)
         return (
-          <span className={cx("badge", isBad ? "badge-red" : "badge-green")}>
+          <span className={cx("badge", `badge-${state}`)}>
             {value}
           </span>
         );
@@ -230,6 +263,7 @@ export default function App() {
     { header: "Dec", accessorKey: "dec" },
   ];
 
+
   const [sorting, setSorting] = React.useState([]);
   const [columnFilters, setColumnFilters] = React.useState([]);
 
@@ -251,6 +285,39 @@ export default function App() {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
+
+
+  const releaseDate = (start, plan, proprietary) => {
+      if (start) {
+        const date = parse(start, "yyyy-MM-dd HH:mm:ss", new Date())
+        return addMonths(date, proprietary)
+      }
+      if (plan) {
+        const plan_date = plan.split(" - ")[0]
+        const date = parse(plan_date, "yyyy-MM-dd", new Date())
+        return addMonths(plan_date, proprietary)
+      }
+      return null
+  };
+
+  const releaseStatus = (row) => {
+    const state = String(row.original.status?? "")
+    const isBad = badKeywords.some(k => state.includes(k))
+    if (isBad) return "failed"
+
+    const start = row.getValue("date_start")
+    if (!start) return "planned"
+
+    const plan = row.getValue("plan_window")
+    const proprietary = row.getValue("proprietary_period")
+
+    const now = new Date()
+    const finalDate = releaseDate(start, plan, proprietary)
+
+    if (!finalDate) return "planned"
+    if (isBefore(finalDate, now)) return "public"
+    return "proprietary"
+  }
 
   const { pageIndex, pageSize } = table.getState().pagination
   const first_entry = pageSize * pageIndex + 1
@@ -343,13 +410,18 @@ export default function App() {
 
         {/* The table */}
         <table className="min-w-full divide-y divide-gray-400">
-          <thead className="sticky top-0 bg-gray-200">
+          <thead className="sticky top-0 bg-gray-200 z-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} >
                 {headerGroup.headers.map((header) => (
                   <th
                       key={header.id}
-                      className="px-2 py-1.5 text-center text-xs font-medium text-black uppercase"
+                      className={cx(
+                        "px-2 py-1.5 text-center text-xs font-medium text-black uppercase",
+                        header.column.id === "target"
+                          ? "sticky left-0 z-40 bg-gray-200"
+                          : "z-30"
+                      )}
                   >
                       {header.isPlaceholder ? null : (
                       <>
@@ -389,15 +461,26 @@ export default function App() {
 
           <tbody className="bg-white divide-y divide-gray-200">
             {table.getRowModel().rows.map((row) => {
-              const value = String(row.original.status?? "");
-              const isBad = badKeywords.some(k => value.includes(k));
+              const state = String(row.original.status?? "");
+              const isBad = badKeywords.some(k => state.includes(k));
+              const rowColor = releaseStatus(row)
+              const rowStyles = getRowStyles(rowColor)
               return (
                 <tr
                   key={row.id}
-                  className={cx("hover:bg-gray-50", isBad ? "text-red" : "text-gray-500")}
+                  className={cx("group", rowStyles.base)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-2 text-left whitespace-nowrap text-sm" >
+                    <td
+                       key={cell.id}
+                       className={cx(
+                         "px-2 py-2 text-left whitespace-nowrap text-sm bg-white",
+                         cell.column.id === "target"
+                           ? "sticky left-0"
+                           : "",
+                         rowStyles.hover
+                       )}
+                     >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
