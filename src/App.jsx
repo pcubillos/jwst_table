@@ -174,6 +174,7 @@ export default function App() {
       });
   }, []);
 
+  const PID_WIDTH = 75
   const columns = [
     { header: "Category", accessorKey: "category",
       meta: { filterVariant: 'select_faceted' },
@@ -193,11 +194,13 @@ export default function App() {
               {info.getValue()}
             </a>
         )},
-      meta: { sticky: true },
+      meta: { sticky: true, left: 0, width: PID_WIDTH },
       filterFn: 'includesString',
     },
     { header: "PI", accessorKey: "pi" },
-    { header: "Target", accessorKey: "target" },
+    { header: "Target", accessorKey: "target",
+      meta: { sticky: true, left: PID_WIDTH },
+    },
     { header: "Planet(s)", accessorKey: "planets",
       cell: (info) => formatPlanets(info.getValue()),
       meta: { filterVariant: 'select_faceted' },
@@ -413,16 +416,23 @@ export default function App() {
           <thead className="sticky top-0 bg-gray-200 z-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} >
-                {headerGroup.headers.map((header) => (
-                  <th
-                      key={header.id}
-                      className={cx(
-                        "px-2 py-1.5 text-center text-xs font-medium text-black uppercase",
-                        header.column.id === "target"
-                          ? "sticky left-0 z-40 bg-gray-200"
-                          : "z-30"
-                      )}
-                  >
+                {headerGroup.headers.map((header) => {
+                  const meta = header.column.columnDef.meta || {}
+                  return (
+                    <th
+                        key={header.id}
+                        className={cx(
+                          "px-2 py-1.5 text-center text-xs font-medium text-black uppercase bg-gray-200",
+                          meta.sticky && "sticky",
+                        )}
+                         style={
+                           meta.sticky ? {
+                             left: meta.left,
+                             width: meta.width,
+                             minWidth: meta.width,
+                           } : undefined
+                         }
+                    >
                       {header.isPlaceholder ? null : (
                       <>
                         <div
@@ -434,10 +444,10 @@ export default function App() {
                           }}
                         >
                           <span>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                           </span>
                           {{
                             asc: <ChevronUp color="black" strokeWidth={3} size={18} />,
@@ -453,8 +463,9 @@ export default function App() {
                         ) : null}
                       </>
                       )}
-                  </th>
-                ))}
+                    </th>
+                  )}
+                )}
               </tr>
             ))}
           </thead>
@@ -470,23 +481,27 @@ export default function App() {
                   key={row.id}
                   className={cx("group", rowStyles.base)}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                       key={cell.id}
-                       className={cx(
-                         "px-2 py-2 text-left whitespace-nowrap text-sm bg-white",
-                         cell.column.id === "target"
-                           ? "sticky left-0"
-                           : "",
-                         rowStyles.hover
-                       )}
-                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta || {}
+                    return (
+                      <td
+                        key={cell.id}
+                        className={cx(
+                          "px-2 py-2 text-left whitespace-nowrap text-sm bg-white",
+                          meta.sticky && "sticky",
+                          rowStyles.hover
+                        )}
+                        style={
+                          meta.sticky ? { left: meta.left } : undefined
+                        }
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    )}
+                  )}
                 </tr>
               )}
             )}
