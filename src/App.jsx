@@ -26,16 +26,37 @@ import {
 } from 'lucide-react';
 import { parse, addMonths, isBefore } from "date-fns"
 
+import { createPortal } from "react-dom"
+
+const Tooltip = ({ children, text }) => {
+  const [pos, setPos] = React.useState(null)
+
+  return (
+    <span
+      onMouseEnter={(e) => {
+        const rect = e.target.getBoundingClientRect()
+        setPos({ x: rect.right + 4, y: rect.top + rect.height/2})
+      }}
+      onMouseLeave={() => setPos(null)}
+      className="truncate"
+    >
+      {children}
+      {pos &&
+        createPortal(
+          <div
+            className="fixed bg-black/40 text-white text-xs px-2 py-1 rounded z-50"
+            style={{ left: pos.x, top: pos.y }}
+          >
+            {text}
+          </div>,
+          document.body
+        )}
+    </span>
+  )
+}
+
 const badKeywords = ["Failed", "Skipped", "Withdrawn"];
 
-const formatPlanets = (value) => {
-  try {
-    const arr = JSON.parse(value.replace(/'/g, '"'));
-    return arr.join(", ");
-  } catch {
-    return value;
-  }
-};
 
 function Filter({ column, table }) {
   const value = column.getFilterValue() ?? "";
@@ -45,7 +66,19 @@ function Filter({ column, table }) {
         table.getColumn("instrument").getFacetedUniqueValues().keys()
       )
 
-  const values = Array.from(column.getFacetedUniqueValues().keys())
+  const uniqueValues = Array.from(column.getFacetedUniqueValues().keys())
+  const values = [
+    ...new Set(
+      uniqueValues.flatMap((value) =>
+        typeof value === "string"
+          ? value.split(",").map(x => x.trim()).filter(x => x !== "")
+          : value != null
+          ? [value]
+          : []
+      )
+    )
+  ]
+
   const isNumeric = values.every(v => !isNaN(Number(v)))
   const options = isNumeric
     ? values.sort((a, b) => Number(a) - Number(b))
@@ -70,7 +103,8 @@ function Filter({ column, table }) {
         acc[instrument].add(value)
       }
       return acc
-    }, {})
+    },
+  {})
 
   const groups = Object.fromEntries(
     Object.entries(grouped).map(([key, set]) => [key, [...set].sort()])
@@ -161,13 +195,15 @@ export default function App() {
 
   const [data, setData] = useState([]);
 
+  const numericColumns = ["pid", "cycle", "groups", "integrations", "duration", "proprietary_period"]
+
   useEffect(() => {
     fetch("/jwst_tso_programs.csv")
       .then((res) => res.text())
       .then((csv) => {
         const result = Papa.parse(csv, {
           header: true,
-          dynamicTyping: true,
+          dynamicTyping: (field) => numericColumns.includes(field),
           skipEmptyLines: true,
         });
         setData(result.data);
@@ -200,9 +236,20 @@ export default function App() {
     { header: "PI", accessorKey: "pi" },
     { header: "Target", accessorKey: "target",
       meta: { sticky: true, left: PID_WIDTH },
+      cell: (info) => {
+        const value = String(info.getValue() ?? "")
+        const aliases = String(info.row.original.aliases ?? "")
+        return aliases ? (
+          <Tooltip text={`aliases: ${aliases}`}>
+            {value}
+          </Tooltip>
+        ) : value;
+      },
     },
+    { header: "aliases", accessorKey: "aliases" },
     { header: "Planet(s)", accessorKey: "planets",
-      cell: (info) => formatPlanets(info.getValue()),
+      cell: (info) => String(info.getValue()),
+      filterFn: 'includesString',
       meta: { filterVariant: 'select_faceted' },
     },
     { header: "Event", accessorKey: "event",
@@ -279,6 +326,9 @@ export default function App() {
         pageIndex: 0,
         pageSize: 50,
       },
+      columnVisibility: {
+        aliases: false,
+      },
     },
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
@@ -331,7 +381,7 @@ export default function App() {
   return (
     <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
 
-        <h2>JWST Exoplanet Observations</h2>
+        <h2>JWST Exoplanet Catalog</h2>
 
         {/* Pagination div */}
         <div className="sticky left-2 flex flex-col sm:flex-row justify-between items-center ml-2 mb-2 text-sm text-gray-700">
