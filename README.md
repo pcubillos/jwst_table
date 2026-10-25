@@ -17,6 +17,7 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Installation
 
+```shell
 npm create vite@latest jdata
 cd jdata
 
@@ -35,4 +36,7 @@ npm install lucide-react
 # Tailwindcss
 npm install tailwindcss @tailwindcss/vite
 
+# Date-time management
+npm install date-fns --save
 npm run dev
+```
