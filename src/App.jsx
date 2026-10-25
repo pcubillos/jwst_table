@@ -58,6 +58,23 @@ const Tooltip = ({ children, text }) => {
 const badKeywords = ["Failed", "Skipped", "Withdrawn"];
 
 
+const planetFinderFilterFn = (row, columnId, filterValue) => {
+  if (!filterValue) return true;
+  const search = String(filterValue).toLowerCase();
+  const target = String(row.getValue(columnId) ?? "").toLowerCase();
+  const aliases = String(row.original.aliases ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  // match target OR any aka
+  return (
+    target.includes(search) ||
+    aliases.some((a) => a.toLowerCase().includes(search))
+  );
+}
+
+
 function Filter({ column, table }) {
   const value = column.getFilterValue() ?? "";
   const inst_filter = table.getColumn("instrument").getFilterValue() ?? "";
@@ -235,7 +252,11 @@ export default function App() {
     },
     { header: "PI", accessorKey: "pi" },
     { header: "Target", accessorKey: "target",
-      meta: { sticky: true, left: PID_WIDTH },
+      meta: {
+       sticky: true,
+       left: PID_WIDTH,
+      },
+      filterFn: 'planetFinder',
       cell: (info) => {
         const value = String(info.getValue() ?? "")
         const aliases = String(info.row.original.aliases ?? "")
@@ -337,6 +358,9 @@ export default function App() {
     getFilteredRowModel: getFilteredRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    filterFns: {
+        planetFinder: planetFinderFilterFn,
+    },
   });
 
 
