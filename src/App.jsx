@@ -211,6 +211,7 @@ function getRowStyles(rowColor) {
 export default function App() {
 
   const [data, setData] = useState([]);
+  const [updateDate, setUpdateDate] = useState("");
 
   const numericColumns = ["pid", "cycle", "groups", "integrations", "duration", "proprietary_period"]
 
@@ -218,7 +219,13 @@ export default function App() {
     fetch(`${import.meta.env.BASE_URL}jwst_tso_programs.csv`)
       .then((res) => res.text())
       .then((csv) => {
-        const result = Papa.parse(csv, {
+        // Extract date
+        const firstNewlineIndex = csv.indexOf('\n');
+        const firstLine = csv.substring(0, firstNewlineIndex);
+        setUpdateDate(firstLine.replace('#', '').trim());
+        // Parse remaining CSV data
+        const csvNoHeader = csv.substring(firstNewlineIndex + 1);
+        const result = Papa.parse(csvNoHeader, {
           header: true,
           dynamicTyping: (field) => numericColumns.includes(field),
           skipEmptyLines: true,
@@ -404,8 +411,46 @@ export default function App() {
 
   return (
     <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
+        {/* Banner */}
 
-        <h2>JWST Exoplanet Catalog</h2>
+      <div className="sticky left-4 z-10 w-full flex flex-col items-start ml-4 mb-2 text-left">
+        <h2 className="text-2xl font-bold mb-3 text-center w-full">
+        JWST Exoplanet TSO Programs</h2>
+
+        {updateDate && (
+          <span className="text-sm text-gray-500">
+            Last updated: <span className="font-medium text-gray-700">{updateDate}</span>
+          </span>
+        )}
+
+        <span className="text-sm text-gray-500">
+          Download the entire dataset as {' '}
+          <a
+            href={`${import.meta.env.BASE_URL}jwst_tso_programs.csv`}
+            download
+            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+          >
+            CSV here
+          </a>
+        </span>
+
+        <span className="text-sm text-gray-500">
+          Powered by{' '}
+          <a
+            href="https://pcubillos.github.io/gen_tso/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+          > Gen TSO </a>
+          {' '}(
+          <a
+            href="https://ui.adsabs.harvard.edu/abs/2024PASP..136l4501C"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+          >Cubillos 2024</a>)
+        </span>
+      </div>
 
         {/* Pagination div */}
         <div className="sticky left-2 flex flex-col sm:flex-row justify-between items-center ml-2 mb-2 text-sm text-gray-700">
@@ -426,7 +471,7 @@ export default function App() {
                 table.setPageSize(Number(e.target.value));
               }}
             >
-              {[15, 25, 50, 800].map((pageSize) => (
+              {[50, 100, 200, 800].map((pageSize) => (
                 <option key={pageSize} value={pageSize}>
                   {pageSize}
                 </option>
