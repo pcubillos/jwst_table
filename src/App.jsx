@@ -215,7 +215,7 @@ export default function App() {
   const numericColumns = ["pid", "cycle", "groups", "integrations", "duration", "proprietary_period"]
 
   useEffect(() => {
-    fetch("/jwst_tso_programs.csv")
+    fetch(`${import.meta.env.BASE_URL}jwst_tso_programs.csv`)
       .then((res) => res.text())
       .then((csv) => {
         const result = Papa.parse(csv, {
