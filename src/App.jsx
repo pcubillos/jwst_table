@@ -138,6 +138,7 @@ function Filter({ column, table }) {
       <option value="transit">transit</option>
       <option value="eclipse">eclipse</option>
       <option value="phase">phase curve</option>
+      <option value="stare">stare</option>
     </select>
   ) : filterVariant === 'select_faceted' ? (
     <select
