@@ -39,8 +39,12 @@ npm install tailwindcss @tailwindcss/vite
 # Date-time management
 npm install date-fns --save
 
-# Deploy on github
+# Enable github deployment
 npm install gh-pages --save-dev
 
+# Deploy on localhost
 npm run dev
+
+# Deploy on Github
+npm run deploy
 ```
