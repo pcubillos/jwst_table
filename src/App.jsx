@@ -412,45 +412,67 @@ export default function App() {
 
   return (
     <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
-        {/* Banner */}
 
+      {/* Banner */}
       <div className="sticky left-4 z-10 w-full flex flex-col items-start ml-4 mb-2 text-left">
         <h2 className="text-2xl font-bold mb-3 text-center w-full">
         JWST Exoplanet TSO Programs</h2>
 
-        {updateDate && (
+        <div className="flex justify-between items-center w-full pr-8">
+          {updateDate && (
+            <span className="text-sm text-gray-500">
+              Last updated: <span className="font-medium text-gray-700">{updateDate}</span>
+            </span>
+          )}
           <span className="text-sm text-gray-500">
-            Last updated: <span className="font-medium text-gray-700">{updateDate}</span>
+            Keys:
+            <span className="mx-1 badge badge-public">Public</span>
+            <span className="mx-0 badge badge-proprietary">Proprietary</span>
+            <span className="mx-1 badge badge-planned">To be observed</span>
+            <span className="mx-0 badge badge-failed">Failed</span>
           </span>
-        )}
+        </div>
 
-        <span className="text-sm text-gray-500">
-          Download the entire dataset as {' '}
-          <a
-            href={`${import.meta.env.BASE_URL}jwst_tso_programs.csv`}
-            download
-            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-          >
-            CSV here
-          </a>
-        </span>
+        <div className="flex justify-between items-center w-full pr-8">
+          <span className="text-sm text-gray-500">
+            Powered by{' '}
+            <a
+              href="https://pcubillos.github.io/gen_tso/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+            > Gen TSO </a>
+            {' '}(
+            <a
+              href="https://ui.adsabs.harvard.edu/abs/2024PASP..136l4501C"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+            >Cubillos 2024</a>)
+          </span>
+        </div>
 
-        <span className="text-sm text-gray-500">
-          Powered by{' '}
-          <a
-            href="https://pcubillos.github.io/gen_tso/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-          > Gen TSO </a>
-          {' '}(
-          <a
-            href="https://ui.adsabs.harvard.edu/abs/2024PASP..136l4501C"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-          >Cubillos 2024</a>)
-        </span>
+        <div className="flex justify-between items-center w-full pr-8">
+          <span className="text-sm text-gray-500">
+            Open an <a
+              href="https://github.com/pcubillos/jwst_table/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+            >issue</a> for bug reports and requests.
+          </span>
+          <span className="text-sm text-gray-500">
+            Download the entire dataset as {' '}
+            <a
+              href={`${import.meta.env.BASE_URL}jwst_tso_programs.csv`}
+              download
+              className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+            >
+              CSV here
+            </a>
+          </span>
+        </div>
+
       </div>
 
         {/* Pagination div */}
