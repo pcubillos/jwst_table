@@ -57,6 +57,36 @@ const Tooltip = ({ children, text }) => {
 
 const badKeywords = ["Failed", "Skipped", "Withdrawn"];
 
+const numericFilterFn = (row, columnId, filterValue) => {
+  if (!filterValue) return true;
+
+  const cellValue = row.getValue(columnId);
+  if (cellValue === undefined || cellValue === null) return false;
+  const cellNum = Number(cellValue);
+
+  // Regex to extract operator (>, <, >=, <=) and the target number
+  const filterStr = String(filterValue).trim();
+
+  if (['>', '<', '>=', '<='].includes(filterStr)) {
+    return true;
+  }
+  const match = filterStr.match(/^(>=|<=|>|<)\s*(-?\d*\.?\d+)$/);
+  if (match) {
+    const operator = match[1];
+    const targetValue = Number(match[2]);
+    if (isNaN(targetValue)) return true;
+    switch (operator) {
+      case '>':  return cellNum > targetValue;
+      case '<':  return cellNum < targetValue;
+      case '>=': return cellNum >= targetValue;
+      case '<=': return cellNum <= targetValue;
+      default: return false;
+    }
+  }
+  // Fallback: Default to string "includes" matching if no operator is typed
+  const cellStr = String(cellValue);
+  return cellStr.toLowerCase() === filterStr.toLowerCase();
+};
 
 const planetFinderFilterFn = (row, columnId, filterValue) => {
   if (!filterValue) return true;
@@ -318,7 +348,8 @@ export default function App() {
         return cellValue === String(filterValue).toLowerCase();
       },
     },
-    { header: "Cycle", accessorKey: "cycle",
+    { header: () => "Cycle",
+      accessorKey: "cycle",
       meta: { filterVariant: 'select_faceted' },
       filterFn: 'includesString',
     },
@@ -346,8 +377,13 @@ export default function App() {
     { header: "Readout", accessorKey: "readout",
       meta: { filterVariant: 'select_grouped' },
     },
-    { header: "Groups", accessorKey: "groups",
-      filterFn: 'includesString',
+    { header: (
+        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+          <span>Groups</span>
+        </Tooltip>
+      ),
+      accessorKey: "groups",
+      filterFn: 'numericFinder',
     },
     { header: "Integrations", accessorKey: "integrations",
       filterFn: 'includesString',
@@ -390,6 +426,7 @@ export default function App() {
     getFacetedUniqueValues: getFacetedUniqueValues(),
     filterFns: {
         planetFinder: planetFinderFilterFn,
+        numericFinder: numericFilterFn,
     },
   });
 
