@@ -348,7 +348,7 @@ export default function App() {
         return cellValue === String(filterValue).toLowerCase();
       },
     },
-    { header: () => "Cycle",
+    { header: "Cycle",
       accessorKey: "cycle",
       meta: { filterVariant: 'select_faceted' },
       filterFn: 'includesString',
@@ -385,10 +385,22 @@ export default function App() {
       accessorKey: "groups",
       filterFn: 'numericFinder',
     },
-    { header: "Integrations", accessorKey: "integrations",
-      filterFn: 'includesString',
+    { header: (
+        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+          <span>Integrations</span>
+        </Tooltip>
+      ),
+      accessorKey: "integrations",
+      filterFn: 'numericFinder',
     },
-    { header: "Duration", accessorKey: "duration" },
+    { header: (
+        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+          <span>Duration (h)</span>
+        </Tooltip>
+      ),
+      accessorKey: "duration",
+      filterFn: 'numericFinder',
+    },
 
     { header: "Date start", accessorKey: "date_start" },
     { header: "Plan window", accessorKey: "plan_window" },
