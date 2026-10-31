@@ -313,7 +313,7 @@ export default function App() {
         if (!filterValue) return true;
         const cellValue = String(row.getValue(columnId)).toLowerCase();
         if (filterValue === 'not_failed') {
-          return !cellValue.includes('failed') && !cellValue.includes('withdrawn') && !cellValue.includes('skipped');
+          return !badKeywords.some(keyword => cellValue.includes(keyword.toLowerCase()));
         }
         return cellValue === String(filterValue).toLowerCase();
       },
@@ -365,7 +365,7 @@ export default function App() {
   ];
 
 
-  const [sorting, setSorting] = React.useState([]);
+  const [sorting, setSorting] = React.useState([{ id: 'pid', desc: false }]);
   const [columnFilters, setColumnFilters] = React.useState([]);
 
   const table = useReactTable({
