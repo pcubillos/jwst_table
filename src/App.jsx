@@ -140,6 +140,20 @@ function Filter({ column, table }) {
       <option value="phase">phase curve</option>
       <option value="stare">stare</option>
     </select>
+  ) : filterVariant === 'select_status' ? (
+    <select
+      onChange={(e) => column.setFilterValue(e.target.value)}
+      value={value}
+      className="mt-1 w-full border rounded-xs px-1 py-0.5 text-xs bg-gray-100 border-gray-300"
+    >
+      <option value="">All</option>
+      <option value="not_failed">Not Failed</option>
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
   ) : filterVariant === 'select_faceted' ? (
     <select
       onChange={(e) => column.setFilterValue(e.target.value)}
@@ -294,7 +308,15 @@ export default function App() {
           </span>
         );
       },
-      meta: { filterVariant: 'select_faceted' },
+      meta: { filterVariant: 'select_status' },
+      filterFn: (row, columnId, filterValue) => {
+        if (!filterValue) return true;
+        const cellValue = String(row.getValue(columnId)).toLowerCase();
+        if (filterValue === 'not_failed') {
+          return !cellValue.includes('failed') && !cellValue.includes('withdrawn') && !cellValue.includes('skipped');
+        }
+        return cellValue === String(filterValue).toLowerCase();
+      },
     },
     { header: "Cycle", accessorKey: "cycle",
       meta: { filterVariant: 'select_faceted' },
