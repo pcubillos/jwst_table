@@ -281,10 +281,12 @@ export default function App() {
 
   const PID_WIDTH = 75
   const columns = [
-    { header: "Category", accessorKey: "category",
+    { header: "Category",
+      accessorKey: "category",
       meta: { filterVariant: 'select_faceted' },
     },
-    { header: "PID", accessorKey: "pid",
+    { header: "PID",
+      accessorKey: "pid",
       cell: (info) => {
         const state = releaseStatus(info.row)
         return (
@@ -303,7 +305,8 @@ export default function App() {
       filterFn: 'includesString',
     },
     { header: "PI", accessorKey: "pi" },
-    { header: "Target", accessorKey: "target",
+    { header: "Target",
+      accessorKey: "target",
       meta: {
        sticky: true,
        left: PID_WIDTH,
@@ -320,15 +323,18 @@ export default function App() {
       },
     },
     { header: "aliases", accessorKey: "aliases" },
-    { header: "Planet(s)", accessorKey: "planets",
+    { header: "Planet(s)",
+      accessorKey: "planets",
       cell: (info) => String(info.getValue()),
       filterFn: 'includesString',
       meta: { filterVariant: 'select_faceted' },
     },
-    { header: "Event", accessorKey: "event",
+    { header: "Event",
+      accessorKey: "event",
       meta: { filterVariant: 'select' },
     },
-    { header: "Status", accessorKey: "status",
+    { header: "Status",
+      accessorKey: "status",
       cell: (info) => {
         const value = String(info.getValue());
         const state = releaseStatus(info.row)
@@ -348,15 +354,25 @@ export default function App() {
         return cellValue === String(filterValue).toLowerCase();
       },
     },
-    { header: "Cycle",
+    { header: (
+        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+          <span>Cycle</span>
+        </Tooltip>
+      ),
       accessorKey: "cycle",
+      filterFn: 'numericFinder',
+    },
+    { header: (
+        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+          <span>Observation</span>
+        </Tooltip>
+      ),
+      accessorKey: "observation",
+      filterFn: 'numericFinder',
+    },
+    { header: "Visit",
+      accessorKey: "visit",
       meta: { filterVariant: 'select_faceted' },
-      filterFn: 'includesString',
-    },
-    { header: "Observation", accessorKey: "observation",
-      filterFn: 'includesString',
-    },
-    { header: "Visit", accessorKey: "visit",
       filterFn: 'includesString',
     },
     { header: "Instrument", accessorKey: "instrument",
