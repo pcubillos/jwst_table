@@ -278,6 +278,41 @@ function getRowStyles(rowColor) {
   }
 }
 
+const releaseDate = (start, plan, proprietary) => {
+    if (start) {
+      const date = parse(start, "yyyy-MM-dd HH:mm:ss", new Date())
+      return addMonths(date, proprietary)
+    }
+    if (plan) {
+      const plan_date = plan.split(" - ")[0]
+      const date = parse(plan_date, "yyyy-MM-dd", new Date())
+      return addMonths(plan_date, proprietary)
+    }
+    return null
+};
+
+const releaseStatus = (row) => {
+  const state = String(row.original.status?? "")
+  const isBad = badKeywords.some(k => state.includes(k))
+  if (isBad) return "failed"
+
+  const start = row.getValue("date_start")
+  if (!start) return "planned"
+
+  const plan = row.getValue("plan_window")
+  const proprietary = row.getValue("proprietary_period")
+
+  const now = new Date()
+  const finalDate = releaseDate(start, plan, proprietary)
+
+  if (!finalDate) return "planned"
+  if (isBefore(finalDate, now)) return "public"
+  return "proprietary"
+}
+
+const numericColumns = ["pid", "cycle", "groups", "integrations", "duration", "proprietary_period"]
+
+const PID_WIDTH = 75
 const columns = [
   {
     header: ({ table }) => {
@@ -479,73 +514,13 @@ const columns = [
 
 export default function App() {
 
-  const handleDownload = (type) => {
-    let exportData = [];
-    if (type === "all") {
-      exportData = data;
-    } else if (type === "filtered") {
-      exportData = table.getFilteredRowModel().rows.map(row => row.original);
-    } else if (type === "favorites") {
-      exportData = table.getSelectedRowModel().rows.map(row => row.original);
-    }
-    if (exportData.length === 0) {
-      alert("No data available to download.");
-      return;
-    }
-    const csvString = Papa.unparse(exportData);
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `jwst_tso_programs.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const [data, setData] = useState([]);
   const [updateDate, setUpdateDate] = useState("");
   const [rowSelection, setRowSelection] = useState({});
-
-  const numericColumns = ["pid", "cycle", "groups", "integrations", "duration", "proprietary_period"]
-
-  useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}jwst_tso_programs.csv`)
-      .then((res) => res.text())
-      .then((csv) => {
-        // Extract date
-        const firstNewlineIndex = csv.indexOf('\n');
-        const firstLine = csv.substring(0, firstNewlineIndex);
-        setUpdateDate(firstLine.replace('#', '').trim());
-        // Parse remaining CSV data
-        const csvNoHeader = csv.substring(firstNewlineIndex + 1);
-        const result = Papa.parse(csvNoHeader, {
-          header: true,
-          dynamicTyping: (field) => numericColumns.includes(field),
-          skipEmptyLines: true,
-        });
-        setData(result.data);
-      });
-  }, []);
-
-  const PID_WIDTH = 75
-
   const [sorting, setSorting] = React.useState([{ id: 'pid', desc: false }]);
   const [columnFilters, setColumnFilters] = React.useState([]);
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDownloadOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const table = useReactTable({
     data,
@@ -580,43 +555,67 @@ export default function App() {
   });
 
 
-  const releaseDate = (start, plan, proprietary) => {
-      if (start) {
-        const date = parse(start, "yyyy-MM-dd HH:mm:ss", new Date())
-        return addMonths(date, proprietary)
-      }
-      if (plan) {
-        const plan_date = plan.split(" - ")[0]
-        const date = parse(plan_date, "yyyy-MM-dd", new Date())
-        return addMonths(plan_date, proprietary)
-      }
-      return null
-  };
-
-  const releaseStatus = (row) => {
-    const state = String(row.original.status?? "")
-    const isBad = badKeywords.some(k => state.includes(k))
-    if (isBad) return "failed"
-
-    const start = row.getValue("date_start")
-    if (!start) return "planned"
-
-    const plan = row.getValue("plan_window")
-    const proprietary = row.getValue("proprietary_period")
-
-    const now = new Date()
-    const finalDate = releaseDate(start, plan, proprietary)
-
-    if (!finalDate) return "planned"
-    if (isBefore(finalDate, now)) return "public"
-    return "proprietary"
-  }
-
   const { pageIndex, pageSize } = table.getState().pagination
   const first_entry = pageSize * pageIndex + 1
   const last_entry = Math.min((pageIndex+1) * pageSize, table.getRowCount())
 
   const hasFilters = table.getState().columnFilters.length > 0
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDownloadOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    fetch(`${import.meta.env.BASE_URL}jwst_tso_programs.csv`)
+      .then((res) => res.text())
+      .then((csv) => {
+        // Extract date
+        const firstNewlineIndex = csv.indexOf('\n');
+        const firstLine = csv.substring(0, firstNewlineIndex);
+        setUpdateDate(firstLine.replace('#', '').trim());
+        // Parse remaining CSV data
+        const csvNoHeader = csv.substring(firstNewlineIndex + 1);
+        const result = Papa.parse(csvNoHeader, {
+          header: true,
+          dynamicTyping: (field) => numericColumns.includes(field),
+          skipEmptyLines: true,
+        });
+        setData(result.data);
+      });
+  }, []);
+
+  const handleDownload = (type) => {
+    let exportData = [];
+    if (type === "all") {
+      exportData = data;
+    } else if (type === "filtered") {
+      exportData = table.getFilteredRowModel().rows.map(row => row.original);
+    } else if (type === "favorites") {
+      exportData = table.getSelectedRowModel().rows.map(row => row.original);
+    }
+    if (exportData.length === 0) {
+      alert("No data available to download.");
+      return;
+    }
+    const csvString = Papa.unparse(exportData);
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `jwst_tso_programs.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   return (
     <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
