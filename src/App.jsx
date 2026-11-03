@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronsRight,
   ChevronRight,
+  Star,
 } from 'lucide-react';
 import { parse, addMonths, isBefore } from "date-fns"
 
@@ -104,6 +105,22 @@ const planetFinderFilterFn = (row, columnId, filterValue) => {
   );
 }
 
+const favoritesFilterFn = (row, columnId, filterValue) => {
+  if (filterValue !== 'favs') return true;
+  return row.getIsSelected();
+};
+
+
+const SortIcon = ({ sortType }) => {
+  if (sortType === "asc") {
+    return <ChevronUp color="black" strokeWidth={3} size={18} />;
+  }
+  if (sortType === "desc") {
+    return <ChevronDown color="black" strokeWidth={3} size={18} />;
+  }
+  return <ChevronsUpDown color="#AAA" size={18} />;
+};
+
 
 function Filter({ column, table }) {
   const value = column.getFilterValue() ?? "";
@@ -158,7 +175,16 @@ function Filter({ column, table }) {
   )
 
   const { filterVariant } = column.columnDef.meta ?? {}
-  return filterVariant === 'select' ? (
+  return filterVariant === 'select_favorites' ? (
+    <select
+      onChange={(e) => column.setFilterValue(e.target.value)}
+      value={column.getFilterValue() ?? ""}
+      className="mt-1 w-full border rounded-xs px-1 py-0.5 text-xs bg-gray-100 border-gray-300"
+    >
+      <option value="">all</option>
+      <option value="favs">favorites</option>
+    </select>
+  ) : filterVariant === 'select' ? (
     <select
       onChange={(e) => column.setFilterValue(e.target.value)}
       value={value}
@@ -257,6 +283,7 @@ export default function App() {
 
   const [data, setData] = useState([]);
   const [updateDate, setUpdateDate] = useState("");
+  const [rowSelection, setRowSelection] = useState({});
 
   const numericColumns = ["pid", "cycle", "groups", "integrations", "duration", "proprietary_period"]
 
@@ -281,6 +308,57 @@ export default function App() {
 
   const PID_WIDTH = 75
   const columns = [
+    {
+      header: ({ table }) => {
+      const isAllSelected = table.getIsAllRowsSelected();
+      const isSomeSelected = table.getIsSomeRowsSelected();
+      return (
+          <div className="flex items-center justify-center w-full">
+            <Tooltip text="Select / Deselect all">
+              <input
+                type="checkbox"
+              //className="w-4 h-4 cursor-pointer rounded border-gray-300 text-amber-500 bg-white focus:ring-amber-400 focus:ring-offset-0"
+                className="w-4 h-4 cursor-pointer rounded border-gray-300 accent-yellow-400 bg-white focus:ring-amber-400"
+                checked={isAllSelected}
+                ref={(el) => {
+                  if (el) {
+                    el.indeterminate = !isAllSelected && isSomeSelected;
+                  }
+                }}
+                onChange={table.getToggleAllRowsSelectedHandler()}
+              />
+            </Tooltip>
+          </div>
+        );
+      },
+      accessorKey: "favorites",
+      enableColumnFilter: true,
+      enableSorting: false,
+      meta: { filterVariant: 'select_favorites' },
+      filterFn: 'favoritesFinder',
+      cell: ({ row }) => {
+        const isStarred = row.getIsSelected();
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevents triggering row selection/clicks elsewhere
+              row.toggleSelected();
+            }}
+            className="focus:outline-none flex items-center justify-center w-full"
+            title={isStarred ? "Unstar program" : "Star program"}
+          >
+            <Star
+              className={cx(
+                "w-4 h-4 transition-all duration-150 cursor-pointer hover:scale-110",
+                isStarred
+                  ? "text-yellow-400 fill-white stroke-[3px]"
+                  : "text-gray-300 fill-white stroke-[2px]"
+              )}
+            />
+          </button>
+        );
+      },
+    },
     { header: "Category",
       accessorKey: "category",
       meta: { filterVariant: 'select_faceted' },
@@ -435,7 +513,10 @@ export default function App() {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: {
+      sorting,
+      rowSelection,
+    },
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -447,6 +528,8 @@ export default function App() {
     },
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    getRowId: (row) => `${row.pid}-${row.observation}`,
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -455,6 +538,7 @@ export default function App() {
     filterFns: {
         planetFinder: planetFinderFilterFn,
         numericFinder: numericFilterFn,
+        favoritesFinder: favoritesFilterFn,
     },
   });
 
@@ -678,11 +762,8 @@ export default function App() {
                               header.getContext()
                             )}
                           </span>
-                          {{
-                            asc: <ChevronUp color="black" strokeWidth={3} size={18} />,
-                            desc: <ChevronDown color="black" strokeWidth={3} size={18} />,
-                          }[header.column.getIsSorted()] ?? (
-                            <ChevronsUpDown color="#AAA" size={18} />
+                          {header.column.getCanSort() && (
+                            <SortIcon sortType={header.column.getIsSorted()} />
                           )}
                         </div>
                         {header.column.getCanFilter() ? (
