@@ -281,6 +281,32 @@ function getRowStyles(rowColor) {
 
 export default function App() {
 
+  const handleDownload = (type) => {
+    let exportData = [];
+    if (type === "all") {
+      exportData = data;
+    } else if (type === "filtered") {
+      exportData = table.getFilteredRowModel().rows.map(row => row.original);
+    } else if (type === "favorites") {
+      exportData = table.getSelectedRowModel().rows.map(row => row.original);
+    }
+    if (exportData.length === 0) {
+      alert("No data available to download.");
+      return;
+    }
+    const csvString = Papa.unparse(exportData);
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `jwst_tso_programs.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const [data, setData] = useState([]);
   const [updateDate, setUpdateDate] = useState("");
   const [rowSelection, setRowSelection] = useState({});
@@ -317,7 +343,6 @@ export default function App() {
             <Tooltip text="Select / Deselect all">
               <input
                 type="checkbox"
-              //className="w-4 h-4 cursor-pointer rounded border-gray-300 text-amber-500 bg-white focus:ring-amber-400 focus:ring-offset-0"
                 className="w-4 h-4 cursor-pointer rounded border-gray-300 accent-yellow-400 bg-white focus:ring-amber-400"
                 checked={isAllSelected}
                 ref={(el) => {
@@ -341,7 +366,7 @@ export default function App() {
         return (
           <button
             onClick={(e) => {
-              e.stopPropagation(); // Prevents triggering row selection/clicks elsewhere
+              e.stopPropagation(); // Prevents triggering row selection
               row.toggleSelected();
             }}
             className="focus:outline-none flex items-center justify-center w-full"
@@ -509,6 +534,18 @@ export default function App() {
 
   const [sorting, setSorting] = React.useState([{ id: 'pid', desc: false }]);
   const [columnFilters, setColumnFilters] = React.useState([]);
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDownloadOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const table = useReactTable({
     data,
@@ -585,7 +622,7 @@ export default function App() {
     <div className="container overflow-x-auto bg-white shadow-md rounded-lg">
 
       {/* Banner */}
-      <div className="sticky left-4 z-10 w-full flex flex-col items-start ml-4 mb-2 text-left">
+      <div className="sticky left-4 z-[60] w-full flex flex-col items-start ml-4 mb-2 text-left">
         <h2 className="text-2xl font-bold mb-3 text-center w-full">
         JWST Exoplanet TSO Programs</h2>
 
@@ -632,16 +669,50 @@ export default function App() {
               className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
             >issue</a> for bug reports and requests.
           </span>
-          <span className="text-sm text-gray-500">
-            Download the entire dataset as {' '}
-            <a
-              href={`${import.meta.env.BASE_URL}jwst_tso_programs.csv`}
-              download
-              className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+
+          <div className="relative inline-block text-left" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDownloadOpen(!isDownloadOpen)}
+              className="inline-flex items-center justify-between gap-x-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition"
             >
-              CSV here
-            </a>
-          </span>
+              Download as CSV
+              <ChevronDown className="-mr-1 h-4 w-4 text-gray-400"/>
+            </button>
+
+            {isDownloadOpen && (
+              <div className="absolute right-0 z-[70] mt-1 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      handleDownload("all");
+                      setIsDownloadOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    All data ({data.length})
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDownload("filtered");
+                      setIsDownloadOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    Filtered entries ({table.getFilteredRowModel().rows.length})
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleDownload("favorites");
+                      setIsDownloadOpen(false);
+                    }}
+                    className="block w-full text-left px-4 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
+                  >
+                    Favorites ({table.getSelectedRowModel().rows.length})
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
