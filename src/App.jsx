@@ -278,6 +278,204 @@ function getRowStyles(rowColor) {
   }
 }
 
+const columns = [
+  {
+    header: ({ table }) => {
+    const isAllSelected = table.getIsAllRowsSelected();
+    const isSomeSelected = table.getIsSomeRowsSelected();
+    return (
+        <div className="flex items-center justify-center w-full">
+          <Tooltip text="Select / Deselect all">
+            <input
+              type="checkbox"
+              className="w-4 h-4 cursor-pointer rounded border-gray-300 accent-yellow-400 bg-white focus:ring-amber-400"
+              checked={isAllSelected}
+              ref={(el) => {
+                if (el) {
+                  el.indeterminate = !isAllSelected && isSomeSelected;
+                }
+              }}
+              onChange={table.getToggleAllRowsSelectedHandler()}
+            />
+          </Tooltip>
+        </div>
+      );
+    },
+    accessorKey: "favorites",
+    enableColumnFilter: true,
+    enableSorting: false,
+    meta: { filterVariant: 'select_favorites' },
+    filterFn: 'favoritesFinder',
+    cell: ({ row }) => {
+      const isStarred = row.getIsSelected();
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevents triggering row selection
+            row.toggleSelected();
+          }}
+          className="focus:outline-none flex items-center justify-center w-full"
+          title={isStarred ? "Unstar program" : "Star program"}
+        >
+          <Star
+            className={cx(
+              "w-4 h-4 transition-all duration-150 cursor-pointer hover:scale-110",
+              isStarred
+                ? "text-yellow-400 fill-white stroke-[3px]"
+                : "text-gray-300 fill-white stroke-[2px]"
+            )}
+          />
+        </button>
+      );
+    },
+  },
+  { header: "Category",
+    accessorKey: "category",
+    meta: { filterVariant: 'select_faceted' },
+  },
+  { header: "PID",
+    accessorKey: "pid",
+    cell: (info) => {
+      const state = releaseStatus(info.row)
+      return (
+          <a href={`https://www.stsci.edu/jwst/science-execution/program-information?id=${info.getValue()}`}
+            className={cx(
+              "hover:underline badge",
+              `badge-${state}`,
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {info.getValue()}
+          </a>
+      )},
+    meta: { sticky: true, left: 0, width: PID_WIDTH },
+    filterFn: 'includesString',
+  },
+  { header: "PI", accessorKey: "pi" },
+  { header: "Target",
+    accessorKey: "target",
+    meta: {
+     sticky: true,
+     left: PID_WIDTH,
+    },
+    filterFn: 'planetFinder',
+    cell: (info) => {
+      const value = String(info.getValue() ?? "")
+      const aliases = String(info.row.original.aliases ?? "")
+      return aliases ? (
+        <Tooltip text={`aliases: ${aliases}`}>
+          {value}
+        </Tooltip>
+      ) : value;
+    },
+  },
+  { header: "aliases", accessorKey: "aliases" },
+  { header: "Planet(s)",
+    accessorKey: "planets",
+    cell: (info) => String(info.getValue()),
+    filterFn: 'includesString',
+    meta: { filterVariant: 'select_faceted' },
+  },
+  { header: "Event",
+    accessorKey: "event",
+    meta: { filterVariant: 'select' },
+  },
+  { header: "Status",
+    accessorKey: "status",
+    cell: (info) => {
+      const value = String(info.getValue());
+      const state = releaseStatus(info.row)
+      return (
+        <span className={cx("badge", `badge-${state}`)}>
+          {value}
+        </span>
+      );
+    },
+    meta: { filterVariant: 'select_status' },
+    filterFn: (row, columnId, filterValue) => {
+      if (!filterValue) return true;
+      const cellValue = String(row.getValue(columnId)).toLowerCase();
+      if (filterValue === 'not_failed') {
+        return !badKeywords.some(keyword => cellValue.includes(keyword.toLowerCase()));
+      }
+      return cellValue === String(filterValue).toLowerCase();
+    },
+  },
+  { header: (
+      <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+        <span>Cycle</span>
+      </Tooltip>
+    ),
+    accessorKey: "cycle",
+    filterFn: 'numericFinder',
+  },
+  { header: (
+      <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+        <span>Observation</span>
+      </Tooltip>
+    ),
+    accessorKey: "observation",
+    filterFn: 'numericFinder',
+  },
+  { header: "Visit",
+    accessorKey: "visit",
+    meta: { filterVariant: 'select_faceted' },
+    filterFn: 'includesString',
+  },
+  { header: "Instrument", accessorKey: "instrument",
+    meta: { filterVariant: 'select_faceted' },
+  },
+  { header: "Mode", accessorKey: "mode",
+    meta: { filterVariant: 'select_grouped' },
+  },
+  { header: "Disperser", accessorKey: "disperser",
+    meta: { filterVariant: 'select_grouped' },
+  },
+  { header: "Filter", accessorKey: "filter",
+    meta: { filterVariant: 'select_grouped' },
+  },
+  { header: "Subarray", accessorKey: "subarray",
+    meta: { filterVariant: 'select_grouped' },
+  },
+  { header: "Readout", accessorKey: "readout",
+    meta: { filterVariant: 'select_grouped' },
+  },
+  { header: (
+      <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+        <span>Groups</span>
+      </Tooltip>
+    ),
+    accessorKey: "groups",
+    filterFn: 'numericFinder',
+  },
+  { header: (
+      <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+        <span>Integrations</span>
+      </Tooltip>
+    ),
+    accessorKey: "integrations",
+    filterFn: 'numericFinder',
+  },
+  { header: (
+      <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
+        <span>Duration (h)</span>
+      </Tooltip>
+    ),
+    accessorKey: "duration",
+    filterFn: 'numericFinder',
+  },
+
+  { header: "Date start", accessorKey: "date_start" },
+  { header: "Plan window", accessorKey: "plan_window" },
+  { header: "Proprietary period", accessorKey: "proprietary_period",
+    meta: { filterVariant: 'select_faceted' },
+    filterFn: 'includesString',
+  },
+  { header: "RA", accessorKey: "ra" },
+  { header: "Dec", accessorKey: "dec" },
+];
+
 
 export default function App() {
 
@@ -333,204 +531,6 @@ export default function App() {
   }, []);
 
   const PID_WIDTH = 75
-  const columns = [
-    {
-      header: ({ table }) => {
-      const isAllSelected = table.getIsAllRowsSelected();
-      const isSomeSelected = table.getIsSomeRowsSelected();
-      return (
-          <div className="flex items-center justify-center w-full">
-            <Tooltip text="Select / Deselect all">
-              <input
-                type="checkbox"
-                className="w-4 h-4 cursor-pointer rounded border-gray-300 accent-yellow-400 bg-white focus:ring-amber-400"
-                checked={isAllSelected}
-                ref={(el) => {
-                  if (el) {
-                    el.indeterminate = !isAllSelected && isSomeSelected;
-                  }
-                }}
-                onChange={table.getToggleAllRowsSelectedHandler()}
-              />
-            </Tooltip>
-          </div>
-        );
-      },
-      accessorKey: "favorites",
-      enableColumnFilter: true,
-      enableSorting: false,
-      meta: { filterVariant: 'select_favorites' },
-      filterFn: 'favoritesFinder',
-      cell: ({ row }) => {
-        const isStarred = row.getIsSelected();
-        return (
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevents triggering row selection
-              row.toggleSelected();
-            }}
-            className="focus:outline-none flex items-center justify-center w-full"
-            title={isStarred ? "Unstar program" : "Star program"}
-          >
-            <Star
-              className={cx(
-                "w-4 h-4 transition-all duration-150 cursor-pointer hover:scale-110",
-                isStarred
-                  ? "text-yellow-400 fill-white stroke-[3px]"
-                  : "text-gray-300 fill-white stroke-[2px]"
-              )}
-            />
-          </button>
-        );
-      },
-    },
-    { header: "Category",
-      accessorKey: "category",
-      meta: { filterVariant: 'select_faceted' },
-    },
-    { header: "PID",
-      accessorKey: "pid",
-      cell: (info) => {
-        const state = releaseStatus(info.row)
-        return (
-            <a href={`https://www.stsci.edu/jwst/science-execution/program-information?id=${info.getValue()}`}
-              className={cx(
-                "hover:underline badge",
-                `badge-${state}`,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {info.getValue()}
-            </a>
-        )},
-      meta: { sticky: true, left: 0, width: PID_WIDTH },
-      filterFn: 'includesString',
-    },
-    { header: "PI", accessorKey: "pi" },
-    { header: "Target",
-      accessorKey: "target",
-      meta: {
-       sticky: true,
-       left: PID_WIDTH,
-      },
-      filterFn: 'planetFinder',
-      cell: (info) => {
-        const value = String(info.getValue() ?? "")
-        const aliases = String(info.row.original.aliases ?? "")
-        return aliases ? (
-          <Tooltip text={`aliases: ${aliases}`}>
-            {value}
-          </Tooltip>
-        ) : value;
-      },
-    },
-    { header: "aliases", accessorKey: "aliases" },
-    { header: "Planet(s)",
-      accessorKey: "planets",
-      cell: (info) => String(info.getValue()),
-      filterFn: 'includesString',
-      meta: { filterVariant: 'select_faceted' },
-    },
-    { header: "Event",
-      accessorKey: "event",
-      meta: { filterVariant: 'select' },
-    },
-    { header: "Status",
-      accessorKey: "status",
-      cell: (info) => {
-        const value = String(info.getValue());
-        const state = releaseStatus(info.row)
-        return (
-          <span className={cx("badge", `badge-${state}`)}>
-            {value}
-          </span>
-        );
-      },
-      meta: { filterVariant: 'select_status' },
-      filterFn: (row, columnId, filterValue) => {
-        if (!filterValue) return true;
-        const cellValue = String(row.getValue(columnId)).toLowerCase();
-        if (filterValue === 'not_failed') {
-          return !badKeywords.some(keyword => cellValue.includes(keyword.toLowerCase()));
-        }
-        return cellValue === String(filterValue).toLowerCase();
-      },
-    },
-    { header: (
-        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
-          <span>Cycle</span>
-        </Tooltip>
-      ),
-      accessorKey: "cycle",
-      filterFn: 'numericFinder',
-    },
-    { header: (
-        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
-          <span>Observation</span>
-        </Tooltip>
-      ),
-      accessorKey: "observation",
-      filterFn: 'numericFinder',
-    },
-    { header: "Visit",
-      accessorKey: "visit",
-      meta: { filterVariant: 'select_faceted' },
-      filterFn: 'includesString',
-    },
-    { header: "Instrument", accessorKey: "instrument",
-      meta: { filterVariant: 'select_faceted' },
-    },
-    { header: "Mode", accessorKey: "mode",
-      meta: { filterVariant: 'select_grouped' },
-    },
-    { header: "Disperser", accessorKey: "disperser",
-      meta: { filterVariant: 'select_grouped' },
-    },
-    { header: "Filter", accessorKey: "filter",
-      meta: { filterVariant: 'select_grouped' },
-    },
-    { header: "Subarray", accessorKey: "subarray",
-      meta: { filterVariant: 'select_grouped' },
-    },
-    { header: "Readout", accessorKey: "readout",
-      meta: { filterVariant: 'select_grouped' },
-    },
-    { header: (
-        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
-          <span>Groups</span>
-        </Tooltip>
-      ),
-      accessorKey: "groups",
-      filterFn: 'numericFinder',
-    },
-    { header: (
-        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
-          <span>Integrations</span>
-        </Tooltip>
-      ),
-      accessorKey: "integrations",
-      filterFn: 'numericFinder',
-    },
-    { header: (
-        <Tooltip text="Search can begin with &gt;, &gt;=, &lt;, or &lt;=">
-          <span>Duration (h)</span>
-        </Tooltip>
-      ),
-      accessorKey: "duration",
-      filterFn: 'numericFinder',
-    },
-
-    { header: "Date start", accessorKey: "date_start" },
-    { header: "Plan window", accessorKey: "plan_window" },
-    { header: "Proprietary period", accessorKey: "proprietary_period",
-      meta: { filterVariant: 'select_faceted' },
-      filterFn: 'includesString',
-    },
-    { header: "RA", accessorKey: "ra" },
-    { header: "Dec", accessorKey: "dec" },
-  ];
-
 
   const [sorting, setSorting] = React.useState([{ id: 'pid', desc: false }]);
   const [columnFilters, setColumnFilters] = React.useState([]);
